@@ -591,6 +591,7 @@ def ister_node_sil(nid):
 @app.route('/api/platform/<int:pid>/ister_seti_olustur', methods=['POST'])
 @login_gerekli
 def ister_seti_olustur(pid):
+    print(pid)
     cur = cur_dict(); cur2 = mysql.connection.cursor()
     # Havuz platformunu bul
     cur.execute("SELECT PlatformID FROM platform_list WHERE HavuzMu=1 LIMIT 1")
@@ -598,12 +599,14 @@ def ister_seti_olustur(pid):
     if not havuz:
         cur.close(); return jsonify({'hata': 'Havuz platformu bulunamadı.'}), 400
     havuz_pid = havuz['PlatformID']
-
+    print(havuz_pid)
     # Platformun seçili konfiglerini al
     cur.execute("SELECT KonfigID FROM platform_konfig WHERE PlatformID=%s", (pid,))
     konfig_ids = [r['KonfigID'] for r in cur.fetchall()]
+    print(konfig_ids)
+
     if not konfig_ids:
-        cur.close(); return jsonify({'hata': 'Platform için konfig seçilmemiş.'}), 400
+        cur.close(); return jsonify({'hata': 'Platform için konfig seçilmemiş. Konfigleri kaydetiğinizden emin olun!'}), 400
 
     # Platformun seviyelerini al
     cur.execute("SELECT * FROM seviye_tanim WHERE PlatformID=%s ORDER BY SeviyeNo", (pid,))
