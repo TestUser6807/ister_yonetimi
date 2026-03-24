@@ -804,9 +804,28 @@ def ta_guncelle(ta_id):
 @app.route('/api/ta/<int:ta_id>/sgo_bagla', methods=['POST'])
 @login_gerekli
 def ta_sgo_bagla(ta_id):
-    d = request.json; cur = mysql.connection.cursor()
-    cur.execute("INSERT IGNORE INTO ta_sgo_baglanti (TaID,NodeID) VALUES (%s,%s)", (ta_id, d['NodeID']))
-    mysql.connection.commit(); cur.close(); return jsonify({'ok': True})
+    d = request.json
+    cur = cur_dict()
+    node_id = d['NodeID']
+    cur.execute("""
+        SELECT b.TaID
+        FROM ta_sgo_baglanti b
+        JOIN ta_dokuman t ON b.TaID = t.TaID
+        WHERE b.NodeID = %s AND b.TaID != %s
+    """, (node_id, ta_id))
+    mevcut = cur.fetchone()
+    if mevcut:
+        cur.close()
+        return jsonify({
+            'hata': 'Bu SGÖ isterine zaten başka bir TA bağlı (TA#' + str(mevcut['TaID']) + ').'
+        }), 400
+    cur.execute(
+        "INSERT IGNORE INTO ta_sgo_baglanti (TaID, NodeID) VALUES (%s, %s)",
+        (ta_id, node_id)
+    )
+    mysql.connection.commit()
+    cur.close()
+    return jsonify({'ok': True})
 
 @app.route('/api/ta/<int:ta_id>/sgo_bag_kaldir/<int:node_id>', methods=['DELETE'])
 @login_gerekli

@@ -93,8 +93,8 @@ function platformDegis(){
   // SGÖ node'larını yükle (bağlama için)
   fetch(`/api/platform/${seciliPID}/ister_agaci`).then(r=>r.json()).then(d=>{
     // Seviye 2 (SGÖ) node'larını filtrele
-    sgoNodelar=d.filter(n=>n.SeviyeNo===2);
-    document.getElementById('sgo-sec').innerHTML=sgoNodelar.map(n=>`<option value="${n.NodeID}">${n.Icerik||'(boş)'}</option>`).join('');
+    var maxNo=d.length?Math.max(...d.map(n=>n.SeviyeNo)):2; sgoNodelar=d.filter(n=>n.SeviyeNo>=maxNo&&!d.some(c=>c.ParentID===n.NodeID));
+    document.getElementById('sgo-sec').innerHTML=sgoNodelar.map(n=>'<option value="'+n.NodeID+'">'+(n.NodeNumarasi?n.NodeNumarasi+' — ':'')+(n.Icerik||'(boş)')+'</option>').join('');
   });
 }
 
@@ -207,7 +207,7 @@ function taKaydet(){
 function sgoBagla(){
   const nodeId=parseInt(document.getElementById('sgo-sec').value);
   fetch(`/api/ta/${seciliTaID}/sgo_bagla`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({NodeID:nodeId})})
-    .then(()=>{modalKapat('sgo-modal');taDetay(seciliTaID)});
+    .then(r=>r.json()).then(d=>{ if(d.hata){alert(d.hata);return;} modalKapat('sgo-modal'); taDetay(seciliTaID); });
 }
 
 function sgoBagKaldir(taId,nodeId){
