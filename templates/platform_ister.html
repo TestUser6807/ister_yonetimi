@@ -660,7 +660,7 @@
     html += '<button class="bm" onclick="siralaDegis(' + node.NodeID + ',\'yukari\')">↑</button>';
     html += '<button class="bm" onclick="siralaDegis(' + node.NodeID + ',\'asagi\')">↓</button>';
     if (!isSGO) html += '<button class="bm" onclick="yeniIsterModal(' + node.NodeID + ')">+ Alt Ekle</button>';
-    if (isSGO && !nd.ta_id) html += '<button class="bm" style="color:var(--amber);border-color:var(--amber-border)" onclick="taEkleModal(' + nd.NodeID + ')">+ TA Ekle</button>'; if (isSGO && nd.ta_id) html += '<a href="/ta_dokuman" class="bm" style="text-decoration:none;color:var(--amber);border-color:var(--amber-border)">TA#' + nd.ta_id + ' ↗</a>';
+    if (isSGO && !node.ta_id) html += '<button class="bm" style="color:var(--amber);border-color:var(--amber-border)" onclick="taEkleModal(' + node.NodeID + ')">+ TA Ekle</button>'; if (isSGO && node.ta_id) html += '<a href="/ta_dokuman" class="bm" style="text-decoration:none;color:var(--amber);border-color:var(--amber-border)">TA#' + node.ta_id + ' ↗</a>';
     html += '<button class="bm" onclick="bulletEkle(' + node.NodeID + ')">• Bullet</button>';
     html += '<button class="bm" onclick="tabloModal(' + node.NodeID + ')">+ Tablo</button>';
     html += '<button class="bm" onclick="gorusModal(' + node.NodeID + ')">+ Görüş</button>';
