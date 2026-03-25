@@ -1039,19 +1039,34 @@ def ister_tablo_ekle():
 @login_gerekli
 def ister_tablo_guncelle(tid):
     import json as json_mod
-    d = request.json; cur = mysql.connection.cursor()
+    d = request.json
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT TabloAdi FROM ister_tablo WHERE TabloID=%s", (tid,))
+    row = cur.fetchone()
+    eski_ad = row[0] if row else "-" 
     cur.execute("UPDATE ister_tablo SET TabloAdi=%s, SutunBasliklari=%s, Satirlar=%s WHERE TabloID=%s",
-                (d.get('TabloAdi',''), json_mod.dumps(d.get('SutunBasliklari',[])),
-                 json_mod.dumps(d.get('Satirlar',[])), tid))
-    mysql.connection.commit(); cur.close(); return jsonify({'ok': True})
-
+                (d.get('TabloAdi',''), 
+                 json_mod.dumps(d.get('SutunBasliklari',[])),
+                 json_mod.dumps(d.get('Satirlar',[])), 
+                 tid))
+    mysql.connection.commit()
+    cur.close()
+    yeni_ad = d.get('TabloAdi', '')
+    log_kaydet('ister_tablo', tid, 'Tablo', eski_ad, yeni_ad, LogTur.UPDATE.value)
+    return jsonify({'ok': True})
+    
 @app.route('/api/ister_tablo/<int:tid>', methods=['DELETE'])
 @login_gerekli
 def ister_tablo_sil(tid):
     cur = mysql.connection.cursor()
+    cur.execute("SELECT TabloAdi FROM ister_tablo WHERE TabloID=%s", (tid,))
+    p = cur.fetchone()
     cur.execute("DELETE FROM ister_tablo WHERE TabloID=%s", (tid,))
-    mysql.connection.commit(); cur.close(); return jsonify({'ok': True})
-
+    mysql.connection.commit()
+    cur.close()
+    if p:
+        log_kaydet('ister_tablo', tid, 'Tablo', p[0], '-', LogTur.DELETE.value)
+    return jsonify({'ok': True})
 # ── FİRMA GÖRÜŞÜ ──────────────────────────────────────────────────────────────
 @app.route('/api/firma_gorusu/<int:node_id>', methods=['GET'])
 @login_gerekli

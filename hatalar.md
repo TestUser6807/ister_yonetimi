@@ -15,3 +15,8 @@
 + Konfigürasayon silince ve eklenince değişiklik logu basmalı mı?
 + Platform silince ve eklenince değişiklik logu basmalı mı?
 + Havuz isterlerde maddeler (bullet) güncellenince değişiklik log basılmıyor.
+
++ log time hatalı mı?
++ tabloda satır sütünlar güncellenince de log basılmalı mı?
++ tablo güncelede modal adı tablo ekle 
++ tablo silme güncelleme platform isterde de gerekli mi?

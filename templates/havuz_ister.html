@@ -172,6 +172,7 @@ mark{background:#fef08a;border-radius:2px;padding:0 1px}
     <div id="mt-sutunlar" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px"></div>
     <div id="mt-preview" style="overflow-x:auto;margin-bottom:8px"></div>
     <button class="btn btn-ghost btn-sm" onclick="mtSatirEkle()">+ Satır</button>
+    <input type="hidden" id="mt-tid">
     <input type="hidden" id="mt-nid">
     <div class="modal-ft">
       <button class="btn btn-ghost" onclick="mc('m-tablo')">İptal</button>
@@ -368,17 +369,110 @@ function renderKutu(node,liste){
 function yukleTabloları(nid){
   fetch(`/api/ister_tablo/${nid}`).then(r=>r.json()).then(list=>{
     const el=document.getElementById(`it-${nid}`);
-    if(!el||!list.length)return;
+    if(!el) return;
+    if(!list.length) { el.innerHTML = ''; return; }
+
     el.innerHTML=list.map(t=>{
-      let s=[],r=[];
+      let s=[], r=[];
       try{s=typeof t.SutunBasliklari==='string'?JSON.parse(t.SutunBasliklari):t.SutunBasliklari||[];}catch(e){}
       try{r=typeof t.Satirlar==='string'?JSON.parse(t.Satirlar):t.Satirlar||[];}catch(e){}
-      if(!s.length)return '';
-      return `<div class="it-wrap">${t.TabloAdi?`<div style="font-size:10px;font-weight:600;color:var(--text3)">${t.TabloAdi}</div>`:''}
-        <table><thead><tr>${s.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
-        <tbody>${r.map(row=>`<tr>${s.map((_,i)=>`<td>${row[i]||''}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+      if(!s.length) return '';
+
+      return `
+        <div class="it-wrap" style="position:relative; margin-bottom:15px; border:1px solid var(--border2); padding:8px; border-radius:4px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px">
+            <div style="font-size:11px; font-weight:600; color:var(--text2)">${t.TabloAdi || 'Adsız Tablo'}</div>
+            <div style="display:flex; gap:8px">
+              <span onclick='tabloDuzenleModal(${JSON.stringify(t)})' style="cursor:pointer; font-size:12px; color:var(--blue)">✎</span>
+              <span onclick="tabloSil(${t.TabloID}, ${nid})" style="cursor:pointer; font-size:12px; color:var(--red)">✕</span>
+            </div>
+          </div>
+          <div style="overflow-x:auto">
+            <table>
+              <thead><tr>${s.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+              <tbody>${r.map(row=>`<tr>${s.map((_,i)=>`<td>${row[i]||''}</td>`).join('')}</tr>`).join('')}</tbody>
+            </table>
+          </div>
+        </div>`;
     }).join('');
   }).catch(()=>{});
+}
+
+function tabloSil(tid, nid) {
+    if(!confirm('Bu tabloyu silmek istediğinize emin misiniz?')) return;
+    fetch(`/api/ister_tablo/${tid}`, { method: 'DELETE' })
+    .then(() => yukleTabloları(nid));
+}
+
+function tabloKaydet() {
+    const nid = parseInt(document.getElementById('mt-nid').value);
+    const tid = document.getElementById('mt-tid').value; // Mevcut Tablo ID'sini al
+    const adi = document.getElementById('mt-adi').value;
+
+    // Eğer tid varsa URL'ye ID ekle ve metodu PUT yap
+    const url = tid ? `/api/ister_tablo/${tid}` : '/api/ister_tablo';
+    const method = tid ? 'PUT' : 'POST';
+
+    // Preview'daki inputlardan güncel verileri çek
+    const inputs = document.querySelectorAll('#mt-preview input');
+    let idx = 0;
+    mtSatirlar.forEach((r, si) => {
+        mtSutunlar.forEach((_, ci) => {
+            if (inputs[idx]) mtSatirlar[si][ci] = inputs[idx].value;
+            idx++;
+        });
+    });
+
+    fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            NodeID: nid,
+            TabloAdi: adi,
+            SutunBasliklari: mtSutunlar,
+            Satirlar: mtSatirlar
+        })
+    })
+    .then(r => r.json())
+    .then(() => {
+        mc('m-tablo'); 
+        yukleTabloları(nid); // Tabloyu yenile
+        document.getElementById('mt-tid').value = ''; // İşlem bitince ID'yi temizle
+    });
+}
+
+function tabloDuzenleModal(t) {
+    document.getElementById('mt-tid').value = t.TabloID; // ID'yi gizli inputa yaz
+    document.getElementById('mt-nid').value = t.NodeID;
+    document.getElementById('mt-adi').value = t.TabloAdi;
+    
+    // JSON parse işlemleri
+    mtSutunlar = typeof t.SutunBasliklari === 'string' ? JSON.parse(t.SutunBasliklari) : t.SutunBasliklari;
+    mtSatirlar = typeof t.Satirlar === 'string' ? JSON.parse(t.Satirlar) : t.Satirlar;
+    
+    renderMtPreview();
+    document.getElementById('m-tablo').classList.add('on');
+}
+
+
+function tabloModal(nid) {
+    document.getElementById('mt-tid').value = ''; 
+    document.getElementById('mt-nid').value = nid;
+    document.getElementById('mt-adi').value = '';
+    mtSutunlar = [];
+    mtSatirlar = [];
+    renderMtPreview();
+    document.getElementById('m-tablo').classList.add('on');
+}
+
+// tabloModal (Yeni ekleme) açılırken ID'yi sıfırlamayı unutma
+function tabloModal(nid){
+    mtTabloID = null; 
+    document.getElementById('mt-nid').value=nid;
+    document.getElementById('mt-adi').value='';
+    mtSutunlar=[]; mtSatirlar=[]; 
+    renderMtPreview();
+    document.getElementById('m-tablo').classList.add('on');
 }
 
 // ── GÖRÜŞLER ──────────────────────────────────────────────────────────────
@@ -686,13 +780,6 @@ function renderMtPreview(){
   let h=`<table style="border-collapse:collapse;width:100%;font-size:11px"><thead><tr>${mtSutunlar.map(s=>`<th style="padding:4px 7px;background:var(--bg3);border:1px solid var(--border2)">${s}</th>`).join('')}</tr></thead><tbody>`;
   mtSatirlar.forEach((r,si)=>{h+=`<tr>${mtSutunlar.map((_,ci)=>`<td style="padding:2px;border:1px solid var(--border2)"><input type="text" value="${(r[ci]||'').replace(/"/g,'&quot;')}" onchange="mtHucre(${si},${ci},this.value)" style="border:none;background:transparent;width:100%;font-size:11px;padding:3px;outline:none"></td>`).join('')}</tr>`;});
   h+='</tbody></table>';p.innerHTML=h;
-}
-function tabloKaydet(){
-  const nid=parseInt(document.getElementById('mt-nid').value);
-  const inputs=document.querySelectorAll('#mt-preview input');
-  let idx=0;mtSatirlar.forEach((r,si)=>mtSutunlar.forEach((_,ci)=>{if(inputs[idx])mtSatirlar[si][ci]=inputs[idx].value;idx++;}));
-  fetch('/api/ister_tablo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({NodeID:nid,TabloAdi:document.getElementById('mt-adi').value,SutunBasliklari:mtSutunlar,Satirlar:mtSatirlar})})
-  .then(()=>{mc('m-tablo');yukle();});
 }
 
 // ── TOPLU UPLOAD ──────────────────────────────────────────────────────────
