@@ -277,7 +277,7 @@ def konfig_ekle():
     d = request.json; cur = mysql.connection.cursor()
     cur.execute("INSERT INTO konfig_list (KonfigAdi) VALUES (%s)", (d['KonfigAdi'],))
     mysql.connection.commit(); nid = cur.lastrowid; cur.close()
-    log_kaydet('konfig_list', nid, 'KonfigAdi', '-', d['KonfigAdi'],LogTur.CREATE.value)
+    log_kaydet('konfig_list', nid, 'Konfig', '-', d['KonfigAdi'],LogTur.CREATE.value)
     return jsonify({'KonfigID': nid, 'KonfigAdi': d['KonfigAdi']})
 
 @app.route('/api/konfig/<int:kid>', methods=['PUT'])
@@ -293,10 +293,16 @@ def konfig_guncelle(kid):
 
 @app.route('/api/konfig/<int:kid>', methods=['DELETE'])
 @login_gerekli
-def konfig_sil(kid):
-    cur = mysql.connection.cursor()
+def konfig_sil(kid):     
+    cur = mysql.connection.cursor() 
+    cur.execute("SELECT KonfigAdi FROM konfig_list WHERE KonfigID=%s", (kid,))
+    eski = cur.fetchone() 
+    if eski:
+        log_kaydet('konfig_list', kid, 'Konfig', eski[0], '-', LogTur.DELETE.value)
     cur.execute("DELETE FROM konfig_list WHERE KonfigID=%s", (kid,))
-    mysql.connection.commit(); cur.close(); return jsonify({'ok': True})
+    mysql.connection.commit()
+    cur.close()
+    return jsonify({'ok': True})
 
 # ── PLATFORM ──────────────────────────────────────────────────────────────────
 @app.route('/api/platform', methods=['GET'])
@@ -333,10 +339,11 @@ def platform_guncelle(pid):
 @login_gerekli
 def platform_sil(pid):
     cur = cur_dict()
-    cur.execute("SELECT HavuzMu FROM platform_list WHERE PlatformID=%s", (pid,))
+    cur.execute("SELECT HavuzMu, PlatformAdi FROM platform_list WHERE PlatformID=%s", (pid,))
     p = cur.fetchone()
     if p and p['HavuzMu']:
         cur.close(); return jsonify({'hata': 'Havuz silinemez.'}), 400
+    log_kaydet('platform_list', pid, 'Platform', p['PlatformAdi'], '-', LogTur.DELETE.value)
     cur.execute("DELETE FROM platform_list WHERE PlatformID=%s", (pid,))
     mysql.connection.commit(); cur.close(); return jsonify({'ok': True})
 
@@ -589,10 +596,11 @@ def ister_node_guncelle(nid):
 @login_gerekli
 def ister_node_sil(nid):
     cur = cur_dict()
-    cur.execute("SELECT n.PlatformID, p.HavuzMu FROM ister_node n JOIN platform_list p ON n.PlatformID=p.PlatformID WHERE n.NodeID=%s", (nid,))
+    cur.execute("SELECT n.PlatformID, p.HavuzMu, n.Icerik FROM ister_node n JOIN platform_list p ON n.PlatformID=p.PlatformID WHERE n.NodeID=%s", (nid,))
     node = cur.fetchone()
     if node and node['HavuzMu']:
         cur.close(); return jsonify({'hata': 'Havuz isterleri silinemez.'}), 400
+    log_kaydet('ister_node', nid, 'Node', node['Icerik'], '-', LogTur.DELETE.value)
     cur.execute("DELETE FROM ister_node WHERE NodeID=%s", (nid,))
     mysql.connection.commit(); cur.close(); return jsonify({'ok': True})
 
@@ -1086,14 +1094,23 @@ def firma_gorusu_ekle():
 @login_gerekli
 def firma_gorusu_guncelle(gid):
     d = request.json; cur = mysql.connection.cursor()
+    cur.execute("SELECT FirmaAdi FROM firma_gorusu WHERE GorusID=%s", (gid,))
+    fa = cur.fetchone()
+    if fa:
+        log_kaydet('firma_gorusu', gid, 'Firma Görüşleri', 'Güncellendi', d.get('GorusIcerik',''), LogTur.UPDATE.value)
     cur.execute("UPDATE firma_gorusu SET FirmaAdi=%s,GorusIcerik=%s,GorusOzet=%s,GorusKategori=%s WHERE GorusID=%s",
                 (d['FirmaAdi'], d.get('GorusIcerik',''), d.get('GorusOzet',''), d.get('GorusKategori',''), gid))
+    
     mysql.connection.commit(); cur.close(); return jsonify({'ok': True})
 
 @app.route('/api/firma_gorusu/<int:gid>', methods=['DELETE'])
 @login_gerekli
 def firma_gorusu_sil(gid):
     cur = mysql.connection.cursor()
+    cur.execute("SELECT FirmaAdi FROM firma_gorusu WHERE GorusID=%s", (gid,))
+    fa = cur.fetchone()
+    if fa:
+        log_kaydet('firma_gorusu', gid, 'Firma Görüşleri', fa['FirmaAdi'], '-', LogTur.DELETE.value)
     cur.execute("DELETE FROM firma_gorusu WHERE GorusID=%s", (gid,))
     mysql.connection.commit(); cur.close(); return jsonify({'ok': True})
 
@@ -1305,6 +1322,9 @@ def bullet_ekle():
 @login_gerekli
 def bullet_guncelle(bid):
     d = request.json; cur = cur_dict()
+    cur.execute("SELECT Icerik FROM ister_bullet WHERE BulletID=%s", (bid,))
+    icerik = cur.fetchone()['Icerik']
+    log_kaydet('ister_bullet', bid, 'Bullet', icerik,  d['Icerik'],LogTur.UPDATE.value)
     cur.execute("UPDATE ister_bullet SET Icerik=%s WHERE BulletID=%s", (d['Icerik'], bid))
     mysql.connection.commit(); cur.close(); return jsonify({'ok': True})
 
@@ -1312,6 +1332,9 @@ def bullet_guncelle(bid):
 @login_gerekli
 def bullet_sil(bid):
     cur = cur_dict()
+    cur.execute("SELECT Icerik FROM ister_bullet WHERE BulletID=%s", (bid,))
+    icerik = cur.fetchone()['Icerik']
+    log_kaydet('ister_bullet', bid, 'Bullet', icerik, '-', LogTur.DELETE.value)
     cur.execute("DELETE FROM ister_bullet WHERE BulletID=%s", (bid,))
     mysql.connection.commit(); cur.close(); return jsonify({'ok': True})
 
