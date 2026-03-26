@@ -9,7 +9,7 @@
 + Excel import hatalı
 
 ## Askıdakiler
-+ Log kayıtları konfig başlık ve seviyeye ile filtreleme olmalı.
++ Log basılmayan yerler var! (kulanıcı güncelleme örn)
 
 ## Yapılanlar
 + Toplu upload route eklendi.
@@ -21,7 +21,7 @@
 + Havuz isterlerde Tablolar güncellenemiyor silinemiyor.
 + Yeni column eklendi. 
 ```` 
-ALTER TABLE Log
+ALTER TABLE degisiklik_log
 ADD Tur VARCHAR(10); 
 ```` 
 + Log sayfasında türe göre friltreleme eklendi.
@@ -30,3 +30,4 @@ ADD Tur VARCHAR(10);
 + tablo silme güncelleme platform isterde de gerekli mi?
 + log time hatalı global saat hatası -3 saat gözüküyot gmt+3 türkiye saati kullan
 + Havuz isterleri silinebilir olamlı.
++ Log kayıtları platform başlık ve seviyeye ile filtreleme olmalı.

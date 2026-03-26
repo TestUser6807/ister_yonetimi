@@ -1014,6 +1014,13 @@ def log_listesi():
     cur.close(); return jsonify(d)
 
 # ── İSTER TABLO (kutucuk içi tablo) ──────────────────────────────────────────
+@app.route('/api/ister_tablo/hepsi', methods=['GET'])
+@login_gerekli
+def ister_tablo_hepsi():
+    cur = cur_dict()
+    cur.execute("SELECT TabloID, NodeID FROM ister_tablo")
+    d = cur.fetchall(); cur.close(); return jsonify(d)
+
 @app.route('/api/ister_tablo/<int:node_id>', methods=['GET'])
 @login_gerekli
 def ister_tablo_listesi(node_id):
@@ -1326,6 +1333,13 @@ def tum_isterler():
     return jsonify(d)
 
 # ── TOPLU UPLOAD ──────────────────────────────────────────────────────────────
+@app.route('/api/ister_bullet/hepsi', methods=['GET'])
+@login_gerekli
+def bullet_hepsi():
+    cur = cur_dict()
+    cur.execute("SELECT BulletID, NodeID FROM ister_bullet")
+    d = cur.fetchall(); cur.close(); return jsonify(d)
+    
 @app.route('/api/ister_bullet/<int:node_id>', methods=['GET'])
 @login_gerekli
 def bullet_listesi(node_id):
