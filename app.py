@@ -1054,7 +1054,7 @@ def ister_tablo_guncelle(tid):
     mysql.connection.commit()
     cur.close()
     yeni_ad = d.get('TabloAdi', '')
-    if not yeni_ad:
+    if yeni_ad:
         log_kaydet('ister_tablo', tid, 'Tablo Adı', eski_ad, yeni_ad, LogTur.UPDATE.value)
     else:
         yeni_satirlar = d.get('Satirlar', [])

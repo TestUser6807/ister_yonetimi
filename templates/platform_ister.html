@@ -382,12 +382,10 @@
   </div>
 </div>
 
-<!-- TABLO -->
+<!-- TABLO MODAL -->
 <div class="modal-overlay" id="m-tablo">
-  <div class="modal" style="max-width:660px">
-    <div class="modal-hd">
-      <div class="modal-title">Tablo Ekle</div><span class="modal-close" onclick="mc('m-tablo')">✕</span>
-    </div>
+  <div class="modal" style="max-width:680px">
+    <div class="modal-hd"><div class="modal-title" id="mt-baslik">Tablo Ekle</div><span class="modal-close" onclick="mc('m-tablo')">✕</span></div>
     <div class="fg"><label class="fl">Tablo Adı</label><input type="text" id="mt-adi"></div>
     <div style="display:flex;gap:7px;align-items:center;margin-bottom:8px">
       <input type="text" id="mt-sutun" placeholder="Sütun adı" style="flex:1">
@@ -396,11 +394,15 @@
     <div id="mt-sutunlar" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px"></div>
     <div id="mt-preview" style="overflow-x:auto;margin-bottom:8px"></div>
     <button class="btn btn-ghost btn-sm" onclick="mtSatirEkle()">+ Satır</button>
+    <input type="hidden" id="mt-tid">
     <input type="hidden" id="mt-nid">
-    <div class="modal-ft"><button class="btn btn-ghost" onclick="mc('m-tablo')">İptal</button><button
-        class="btn btn-primary" onclick="tabloKaydet()">Kaydet</button></div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="mc('m-tablo')">İptal</button>
+      <button class="btn btn-primary" onclick="tabloKaydet()">Kaydet</button>
+    </div>
   </div>
 </div>
+
 <!-- TA BAĞLAMA MODAL -->
 <div class="modal-overlay" id="m-ta-bagla">
   <div class="modal" style="max-width:420px">
@@ -879,14 +881,112 @@
   function isterSil(nid) { if (!confirm('Bu ister ve alt isterleri silinecek?')) return; fetch('/api/ister_node/' + nid, { method: 'DELETE' }).then(function (r) { return r.json(); }).then(function (d) { if (d.hata) { alert(d.hata); return; } if (seciliNID === nid) { document.getElementById('detay-bos').style.display = 'block'; document.getElementById('detay-icerik').style.display = 'none'; seciliNID = null; } yukle(); }); }
 
   // ── TABLO ────────────────────────────────────────────────────────────────
-  function yukleTabloları(nid) { fetch('/api/ister_tablo/' + nid).then(function (r) { return r.json(); }).then(function (list) { var el = document.getElementById('it-' + nid); if (!el || !list.length) return; el.innerHTML = list.map(function (t) { var s = [], r = []; try { s = typeof t.SutunBasliklari === 'string' ? JSON.parse(t.SutunBasliklari) : t.SutunBasliklari || []; } catch (e) { } try { r = typeof t.Satirlar === 'string' ? JSON.parse(t.Satirlar) : t.Satirlar || []; } catch (e) { } if (!s.length) return ''; return '<div class="it-wrap">' + (t.TabloAdi ? '<div style="font-size:10px;font-weight:600;color:var(--text3)">' + t.TabloAdi + '</div>' : '') + '<table><thead><tr>' + s.map(function (h) { return '<th>' + h + '</th>'; }).join('') + '</tr></thead><tbody>' + r.map(function (row) { return '<tr>' + s.map(function (_, i) { return '<td>' + (row[i] || '') + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>'; }).join(''); }).catch(function () { }); }
-  function tabloModal(nid) { document.getElementById('mt-nid').value = nid; document.getElementById('mt-adi').value = ''; mtSutunlar = []; mtSatirlar = []; renderMtPreview(); document.getElementById('m-tablo').classList.add('on'); }
-  function mtSutunEkle() { var v = document.getElementById('mt-sutun').value.trim(); if (!v) return; mtSutunlar.push(v); mtSatirlar = mtSatirlar.map(function (r) { return r.concat(['']); }); document.getElementById('mt-sutun').value = ''; renderMtPreview(); }
-  function mtSatirEkle() { mtSatirlar.push(mtSutunlar.map(function () { return ''; })); renderMtPreview(); }
-  function mtSutunSil(i) { mtSutunlar.splice(i, 1); mtSatirlar = mtSatirlar.map(function (r) { r.splice(i, 1); return r; }); renderMtPreview(); }
-  function mtHucre(si, ci, v) { if (mtSatirlar[si]) mtSatirlar[si][ci] = v; }
-  function renderMtPreview() { document.getElementById('mt-sutunlar').innerHTML = mtSutunlar.map(function (s, i) { return '<span style="padding:2px 7px;background:var(--bg3);border:1px solid var(--border2);border-radius:3px;font-size:11px;display:inline-flex;align-items:center;gap:3px">' + s + '<span onclick="mtSutunSil(' + i + ')" style="cursor:pointer;color:var(--red)">✕</span></span>'; }).join(''); var p = document.getElementById('mt-preview'); if (!mtSutunlar.length) { p.innerHTML = ''; return; } var h = '<table style="border-collapse:collapse;width:100%;font-size:11px"><thead><tr>' + mtSutunlar.map(function (s) { return '<th style="padding:4px 7px;background:var(--bg3);border:1px solid var(--border2)">' + s + '</th>'; }).join('') + '</tr></thead><tbody>'; mtSatirlar.forEach(function (r, si) { h += '<tr>' + mtSutunlar.map(function (_, ci) { return '<td style="padding:2px;border:1px solid var(--border2)"><input type="text" value="' + ((r[ci] || '').replace(/"/g, '&quot;')) + '" onchange="mtHucre(' + si + ',' + ci + ',this.value)" style="border:none;background:transparent;width:100%;font-size:11px;padding:3px;outline:none"></td>'; }).join('') + '</tr>'; }); h += '</tbody></table>'; p.innerHTML = h; }
-  function tabloKaydet() { var nid = parseInt(document.getElementById('mt-nid').value); var inputs = document.querySelectorAll('#mt-preview input'); var idx = 0; mtSatirlar.forEach(function (r, si) { mtSutunlar.forEach(function (_, ci) { if (inputs[idx]) mtSatirlar[si][ci] = inputs[idx].value; idx++; }); }); fetch('/api/ister_tablo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ NodeID: nid, TabloAdi: document.getElementById('mt-adi').value, SutunBasliklari: mtSutunlar, Satirlar: mtSatirlar }) }).then(function () { mc('m-tablo'); yukle(); }); }
+
+  function yukleTabloları(nid){
+    fetch(`/api/ister_tablo/${nid}`).then(r=>r.json()).then(list=>{
+      const el=document.getElementById(`it-${nid}`);
+      if(!el) return;
+      if(!list.length) { el.innerHTML = ''; return; }
+
+      el.innerHTML=list.map(t=>{
+        let s=[], r=[];
+        try{s=typeof t.SutunBasliklari==='string'?JSON.parse(t.SutunBasliklari):t.SutunBasliklari||[];}catch(e){}
+        try{r=typeof t.Satirlar==='string'?JSON.parse(t.Satirlar):t.Satirlar||[];}catch(e){}
+        if(!s.length) return '';
+
+        return `
+          <div class="it-wrap" style="position:relative; margin-bottom:15px; border:1px solid var(--border2); padding:8px; border-radius:4px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px">
+              <div style="font-size:11px; font-weight:600; color:var(--text2)">${t.TabloAdi || 'Adsız Tablo'}</div>
+              <div style="display:flex; gap:8px">
+                <span onclick='tabloDuzenleModal(${JSON.stringify(t)})' style="cursor:pointer; font-size:12px; color:var(--blue)">✎</span>
+                <span onclick="tabloSil(${t.TabloID}, ${nid})" style="cursor:pointer; font-size:12px; color:var(--red)">✕</span>
+              </div>
+            </div>
+            <div style="overflow-x:auto">
+              <table>
+                <thead><tr>${s.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+                <tbody>${r.map(row=>`<tr>${s.map((_,i)=>`<td>${row[i]||''}</td>`).join('')}</tr>`).join('')}</tbody>
+              </table>
+            </div>
+          </div>`;
+      }).join('');
+    }).catch(()=>{});
+  }
+  function tabloSil(tid, nid) {
+      if(!confirm('Bu tabloyu silmek istediğinize emin misiniz?')) return;
+      fetch(`/api/ister_tablo/${tid}`, { method: 'DELETE' })
+      .then(() => yukleTabloları(nid));
+  }
+  function tabloKaydet() {
+      const nid = parseInt(document.getElementById('mt-nid').value);
+      const tid = document.getElementById('mt-tid').value;
+      const adi = document.getElementById('mt-adi').value;
+
+      // Eğer tid varsa URL'ye ID ekle ve metodu PUT yap
+      const url = tid ? `/api/ister_tablo/${tid}` : '/api/ister_tablo';
+      const method = tid ? 'PUT' : 'POST';
+
+      // Preview'daki inputlardan güncel verileri çek
+      const inputs = document.querySelectorAll('#mt-preview input');
+      let idx = 0;
+      mtSatirlar.forEach((r, si) => {
+          mtSutunlar.forEach((_, ci) => {
+              if (inputs[idx]) mtSatirlar[si][ci] = inputs[idx].value;
+              idx++;
+          });
+      });
+
+      fetch(url, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+              NodeID: nid,
+              TabloAdi: adi,
+              SutunBasliklari: mtSutunlar,
+              Satirlar: mtSatirlar
+          })
+      })
+      .then(r => r.json())
+      .then(() => {
+          mc('m-tablo'); 
+          yukleTabloları(nid);
+          document.getElementById('mt-tid').value = '';
+      });
+  }
+  function tabloDuzenleModal(t) {
+      document.getElementById('mt-tid').value = t.TabloID;
+      document.getElementById('mt-nid').value = t.NodeID;
+      document.getElementById('mt-adi').value = t.TabloAdi;
+      document.getElementById('mt-baslik').innerHTML = 'Tablo Güncelle';
+      mtSutunlar = typeof t.SutunBasliklari === 'string' ? JSON.parse(t.SutunBasliklari) : t.SutunBasliklari;
+      mtSatirlar = typeof t.Satirlar === 'string' ? JSON.parse(t.Satirlar) : t.Satirlar;
+      renderMtPreview();
+      document.getElementById('m-tablo').classList.add('on');
+  }
+  function tabloModal(nid) {
+      document.getElementById('mt-baslik').innerHTML = 'Tablo Ekle';
+      document.getElementById('mt-tid').value = ''; 
+      document.getElementById('mt-nid').value = nid;
+      document.getElementById('mt-adi').value = '';
+      mtSutunlar = [];
+      mtSatirlar = [];
+      mtTabloID = null; 
+      renderMtPreview();
+      document.getElementById('m-tablo').classList.add('on');
+  }
+  function mtSutunEkle(){const v=document.getElementById('mt-sutun').value.trim();if(!v)return;mtSutunlar.push(v);mtSatirlar=mtSatirlar.map(r=>[...r,'']);document.getElementById('mt-sutun').value='';renderMtPreview();}
+  function mtSatirEkle(){mtSatirlar.push(mtSutunlar.map(()=>''));renderMtPreview();}
+  function mtSutunSil(i){mtSutunlar.splice(i,1);mtSatirlar=mtSatirlar.map(r=>{r.splice(i,1);return r;});renderMtPreview();}
+  function mtHucre(si,ci,v){if(mtSatirlar[si])mtSatirlar[si][ci]=v;}
+  function renderMtPreview(){
+    document.getElementById('mt-sutunlar').innerHTML=mtSutunlar.map((s,i)=>`<span style="padding:2px 7px;background:var(--bg3);border:1px solid var(--border2);border-radius:3px;font-size:11px;display:inline-flex;align-items:center;gap:3px">${s}<span onclick="mtSutunSil(${i})" style="cursor:pointer;color:var(--red)">✕</span></span>`).join('');
+    const p=document.getElementById('mt-preview');
+    if(!mtSutunlar.length){p.innerHTML='';return;}
+    let h=`<table style="border-collapse:collapse;width:100%;font-size:11px"><thead><tr>${mtSutunlar.map(s=>`<th style="padding:4px 7px;background:var(--bg3);border:1px solid var(--border2)">${s}</th>`).join('')}</tr></thead><tbody>`;
+    mtSatirlar.forEach((r,si)=>{h+=`<tr>${mtSutunlar.map((_,ci)=>`<td style="padding:2px;border:1px solid var(--border2)"><input type="text" value="${(r[ci]||'').replace(/"/g,'&quot;')}" onchange="mtHucre(${si},${ci},this.value)" style="border:none;background:transparent;width:100%;font-size:11px;padding:3px;outline:none"></td>`).join('')}</tr>`;});
+    h+='</tbody></table>';p.innerHTML=h;
+  }
 
   // ── BULLET ────────────────────────────────────────────────────────────────
   function yukleButonlar(nid) { fetch('/api/ister_bullet/' + nid).then(function (r) { return r.json(); }).then(function (list) { var el = document.getElementById('ib-' + nid); if (!el) return; if (!list.length) { el.innerHTML = ''; return; } var html = '<div style="margin-top:7px;padding:8px 10px;background:var(--bg4);border-radius:5px;border-left:3px solid var(--border2)"><div style="font-size:9px;font-weight:600;color:var(--text3);margin-bottom:5px">MADDELER</div>'; list.forEach(function (b) { html += '<div style="display:flex;align-items:flex-start;gap:6px;padding:3px 0;border-bottom:1px solid var(--border)" id="bullet-' + b.BulletID + '"><span style="color:var(--text3);font-size:12px;flex-shrink:0">•</span><div style="flex:1;font-size:12px;line-height:1.5" id="bullet-txt-' + b.BulletID + '">' + b.Icerik + '</div><div style="display:flex;gap:2px"><button class="bm" style="padding:1px 5px;font-size:10px" onclick="bulletDuzSatir(' + b.BulletID + ',' + nid + ')">✎</button><button class="bm" style="padding:1px 5px;font-size:10px" onclick="bulletSirala(' + b.BulletID + ',\'yukari\',' + nid + ')">↑</button><button class="bm" style="padding:1px 5px;font-size:10px" onclick="bulletSirala(' + b.BulletID + ',\'asagi\',' + nid + ')">↓</button><button class="bm d" style="padding:1px 5px;font-size:10px" onclick="bulletSilBtn(' + b.BulletID + ',' + nid + ')">✕</button></div></div>'; }); html += '<button class="bm" style="margin-top:6px;font-size:10px" onclick="bulletEkle(' + nid + ')">+ Madde Ekle</button></div>'; el.innerHTML = html; }).catch(function () { }); }
