@@ -406,7 +406,7 @@ function tabloSil(tid, nid) {
 
 function tabloKaydet() {
     const nid = parseInt(document.getElementById('mt-nid').value);
-    const tid = document.getElementById('mt-tid').value; // Mevcut Tablo ID'sini al
+    const tid = document.getElementById('mt-tid').value;
     const adi = document.getElementById('mt-adi').value;
 
     // Eğer tid varsa URL'ye ID ekle ve metodu PUT yap
@@ -436,8 +436,8 @@ function tabloKaydet() {
     .then(r => r.json())
     .then(() => {
         mc('m-tablo'); 
-        yukleTabloları(nid); // Tabloyu yenile
-        document.getElementById('mt-tid').value = ''; // İşlem bitince ID'yi temizle
+        yukleTabloları(nid);
+        document.getElementById('mt-tid').value = '';
     });
 }
 
@@ -464,6 +464,19 @@ function tabloModal(nid) {
     document.getElementById('m-tablo').classList.add('on');
 }
 
+// ── TABLO ─────────────────────────────────────────────────────────────────
+function mtSutunEkle(){const v=document.getElementById('mt-sutun').value.trim();if(!v)return;mtSutunlar.push(v);mtSatirlar=mtSatirlar.map(r=>[...r,'']);document.getElementById('mt-sutun').value='';renderMtPreview();}
+function mtSatirEkle(){mtSatirlar.push(mtSutunlar.map(()=>''));renderMtPreview();}
+function mtSutunSil(i){mtSutunlar.splice(i,1);mtSatirlar=mtSatirlar.map(r=>{r.splice(i,1);return r;});renderMtPreview();}
+function mtHucre(si,ci,v){if(mtSatirlar[si])mtSatirlar[si][ci]=v;}
+function renderMtPreview(){
+  document.getElementById('mt-sutunlar').innerHTML=mtSutunlar.map((s,i)=>`<span style="padding:2px 7px;background:var(--bg3);border:1px solid var(--border2);border-radius:3px;font-size:11px;display:inline-flex;align-items:center;gap:3px">${s}<span onclick="mtSutunSil(${i})" style="cursor:pointer;color:var(--red)">✕</span></span>`).join('');
+  const p=document.getElementById('mt-preview');
+  if(!mtSutunlar.length){p.innerHTML='';return;}
+  let h=`<table style="border-collapse:collapse;width:100%;font-size:11px"><thead><tr>${mtSutunlar.map(s=>`<th style="padding:4px 7px;background:var(--bg3);border:1px solid var(--border2)">${s}</th>`).join('')}</tr></thead><tbody>`;
+  mtSatirlar.forEach((r,si)=>{h+=`<tr>${mtSutunlar.map((_,ci)=>`<td style="padding:2px;border:1px solid var(--border2)"><input type="text" value="${(r[ci]||'').replace(/"/g,'&quot;')}" onchange="mtHucre(${si},${ci},this.value)" style="border:none;background:transparent;width:100%;font-size:11px;padding:3px;outline:none"></td>`).join('')}</tr>`;});
+  h+='</tbody></table>';p.innerHTML=h;
+}
 // ── GÖRÜŞLER ──────────────────────────────────────────────────────────────
 function gorusleriToggle(nid){
   const el=document.getElementById(`ig-${nid}`);if(!el)return;
@@ -755,21 +768,6 @@ function yanitKaydet(gid,nid){
   fetch(`/api/firma_gorusu/${gid}/yanit`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({YanitIcerik:v})})
   .then(()=>{const el=document.getElementById(`ig-${nid}`);if(el)el.dataset.y='0';inp.value='';gorusleriToggle(nid);});
 }
-
-// ── TABLO ─────────────────────────────────────────────────────────────────
-function mtSutunEkle(){const v=document.getElementById('mt-sutun').value.trim();if(!v)return;mtSutunlar.push(v);mtSatirlar=mtSatirlar.map(r=>[...r,'']);document.getElementById('mt-sutun').value='';renderMtPreview();}
-function mtSatirEkle(){mtSatirlar.push(mtSutunlar.map(()=>''));renderMtPreview();}
-function mtSutunSil(i){mtSutunlar.splice(i,1);mtSatirlar=mtSatirlar.map(r=>{r.splice(i,1);return r;});renderMtPreview();}
-function mtHucre(si,ci,v){if(mtSatirlar[si])mtSatirlar[si][ci]=v;}
-function renderMtPreview(){
-  document.getElementById('mt-sutunlar').innerHTML=mtSutunlar.map((s,i)=>`<span style="padding:2px 7px;background:var(--bg3);border:1px solid var(--border2);border-radius:3px;font-size:11px;display:inline-flex;align-items:center;gap:3px">${s}<span onclick="mtSutunSil(${i})" style="cursor:pointer;color:var(--red)">✕</span></span>`).join('');
-  const p=document.getElementById('mt-preview');
-  if(!mtSutunlar.length){p.innerHTML='';return;}
-  let h=`<table style="border-collapse:collapse;width:100%;font-size:11px"><thead><tr>${mtSutunlar.map(s=>`<th style="padding:4px 7px;background:var(--bg3);border:1px solid var(--border2)">${s}</th>`).join('')}</tr></thead><tbody>`;
-  mtSatirlar.forEach((r,si)=>{h+=`<tr>${mtSutunlar.map((_,ci)=>`<td style="padding:2px;border:1px solid var(--border2)"><input type="text" value="${(r[ci]||'').replace(/"/g,'&quot;')}" onchange="mtHucre(${si},${ci},this.value)" style="border:none;background:transparent;width:100%;font-size:11px;padding:3px;outline:none"></td>`).join('')}</tr>`;});
-  h+='</tbody></table>';p.innerHTML=h;
-}
-
 // ── TOPLU UPLOAD ──────────────────────────────────────────────────────────
 function topluUploadAc(){document.getElementById('ut-liste').value='';document.getElementById('ut-onizleme').style.display='none';document.getElementById('m-upload').classList.add('on');}
 function utDosyaOku(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{document.getElementById('ut-liste').value=e.target.result.trim();utOnizle();};r.readAsText(f,'UTF-8');inp.value='';}

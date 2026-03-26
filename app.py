@@ -1041,9 +1041,11 @@ def ister_tablo_guncelle(tid):
     import json as json_mod
     d = request.json
     cur = mysql.connection.cursor()
-    cur.execute("SELECT TabloAdi FROM ister_tablo WHERE TabloID=%s", (tid,))
+    cur.execute("SELECT TabloAdi,Satirlar FROM ister_tablo WHERE TabloID=%s", (tid,))
     row = cur.fetchone()
     eski_ad = row[0] if row else "-" 
+    eski_satirlar = row[1] if row else "-" 
+
     cur.execute("UPDATE ister_tablo SET TabloAdi=%s, SutunBasliklari=%s, Satirlar=%s WHERE TabloID=%s",
                 (d.get('TabloAdi',''), 
                  json_mod.dumps(d.get('SutunBasliklari',[])),
@@ -1052,7 +1054,19 @@ def ister_tablo_guncelle(tid):
     mysql.connection.commit()
     cur.close()
     yeni_ad = d.get('TabloAdi', '')
-    log_kaydet('ister_tablo', tid, 'Tablo', eski_ad, yeni_ad, LogTur.UPDATE.value)
+    if not yeni_ad:
+        log_kaydet('ister_tablo', tid, 'Tablo Adı', eski_ad, yeni_ad, LogTur.UPDATE.value)
+    else:
+        yeni_satirlar = d.get('Satirlar', [])
+        log_kaydet(
+            'ister_tablo', 
+            tid, 
+            'Tablo Satır Sütun', 
+            eski_satirlar,
+            yeni_satirlar,   
+            LogTur.UPDATE.value
+        )
+            
     return jsonify({'ok': True})
     
 @app.route('/api/ister_tablo/<int:tid>', methods=['DELETE'])

@@ -10,7 +10,6 @@
 
 ## Askıdakiler
 + log time hatalı global saat hatası -3 saat gözüküyot gmt+3 türkiye saati kullan
-+ tabloda satır sütünlar güncellenince de log basılmalı mı?
 + tablo silme güncelleme platform isterde de gerekli mi?
 
 ## Yapılanlar
@@ -26,3 +25,4 @@ ADD Tur VARCHAR(10);
 ```` 
 + Log sayfasında türe göre friltreleme eklendi.
 + Log sayfasında tür listelendi.
++ tabloda satır sütünlar güncellenince de log basılmalı mı?
