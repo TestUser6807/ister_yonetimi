@@ -1,5 +1,5 @@
 # Hatalar
-
++ Karşılaştırma yapıldıktan sonra güncelle yapılınca dış liste güncellenmiyor ve güncelle logu basmıyor.
 ## Göz Ardı Edilenler
 + Admin olmayan kullanıcılar kulanıcı ekleyip silebiliyor başkasının parolasını değiştirebiliyor? 
 (hatta admin olmayanlar kulanıcılar side menüsünü görmemeli mi?)
