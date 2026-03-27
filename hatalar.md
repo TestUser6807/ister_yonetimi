@@ -9,8 +9,9 @@
 + Excel import hatalı
 + Havuzda Platform isterdeki gibi firma görüşleri gözükmeli mi?
 ## Askıdakiler
++ Raporlar sayfası altına tab eklenecek havuz isterleri tablo şeklinde gözükecek.
 + gmt time hatası
-+ firma görüş yanıt log da basmalı.
+
 ## Yapılanlar
 + Toplu upload route eklendi.
 + TA SGÖ ilişki kuralı eklendi.
@@ -34,3 +35,4 @@ ADD Tur VARCHAR(10);
 + Havuz isterleri silinebilir olamlı.
 + Log kayıtları platform başlık ve seviyeye ile filtreleme olmalı.
 + Firma görüşü silinebilir ve güncellenebilir olmalı.
++ firma görüş yanıt log da basmalı.
