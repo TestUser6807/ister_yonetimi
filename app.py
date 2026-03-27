@@ -341,11 +341,22 @@ def platform_sil(pid):
     cur = cur_dict()
     cur.execute("SELECT HavuzMu, PlatformAdi FROM platform_list WHERE PlatformID=%s", (pid,))
     p = cur.fetchone()
-    if p and p['HavuzMu']:
-        cur.close(); return jsonify({'hata': 'Havuz silinemez.'}), 400
+    if not p:
+        cur.close()
+        return jsonify({'hata': 'Platform bulunamadı.'}), 404
+    if p['HavuzMu']:
+        cur.close()
+        return jsonify({'hata': 'Havuz silinemez.'}), 400
+    cur.execute("SELECT COUNT(*) AS cnt FROM ister_node WHERE PlatformID=%s", (pid,))
+    count = cur.fetchone()['cnt']
+    if count > 0:
+        cur.close()
+        return jsonify({'hata': f'Platforma bağlı {count} kayıt var, önce onları silin.'}), 400
     log_kaydet('platform_list', pid, 'Platform', p['PlatformAdi'], '-', LogTur.DELETE.value)
     cur.execute("DELETE FROM platform_list WHERE PlatformID=%s", (pid,))
-    mysql.connection.commit(); cur.close(); return jsonify({'ok': True})
+    mysql.connection.commit()
+    cur.close()
+    return jsonify({'ok': True})
 
 # ── SEVİYE TANIM ──────────────────────────────────────────────────────────────
 @app.route('/api/platform/<int:pid>/seviye', methods=['GET'])
