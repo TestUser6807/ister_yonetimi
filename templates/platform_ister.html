@@ -996,12 +996,214 @@
   function bulletSirala(bid, yon, nid) { fetch('/api/ister_bullet/siralama', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ BulletID: bid, Yon: yon }) }).then(function () { yukleButonlar(nid); }); }
 
   // ── GÖRÜŞ ────────────────────────────────────────────────────────────────
-  function gorusleriToggle(nid) { var el = document.getElementById('ig-' + nid); if (!el) return; if (el.dataset.y === '1') { el.innerHTML = ''; el.dataset.y = '0'; return; } fetch('/api/firma_gorusu/' + nid + '?platform_id=' + (seciliPID || '')).then(function (r) { return r.json(); }).then(function (list) { el.dataset.y = '1'; if (!list.length) { el.innerHTML = '<div style="font-size:11px;color:var(--text3);padding:6px">Henüz görüş yok.</div>'; return; } var html = list.map(function (g, i) { var renk = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'][i % 5]; var yns = g.yanitlar.map(function (y) { return '<div style="margin-top:5px;padding:5px 7px;background:var(--bg2);border-radius:4px;border-left:3px solid var(--accent)"><div style="font-size:9px;color:var(--text3)">' + (y.YazanAdi || '—') + ' · ' + y.OlusturmaTarihi + '</div><div style="font-size:11px">' + y.YanitIcerik + '</div></div>'; }).join(''); return '<div style="margin-top:7px;padding:9px;background:var(--bg3);border-radius:5px;border-left:3px solid ' + renk + '"><div style="display:flex;justify-content:space-between"><span style="font-size:11px;font-weight:600;color:' + renk + '">' + g.FirmaAdi + '</span><span style="font-size:9px;color:var(--text3)">' + g.OlusturmaTarihi + '</span></div>' + (g.GorusOzet ? '<div style="font-size:11px;color:var(--text2);font-style:italic;margin-top:3px">"' + g.GorusOzet + '"</div>' : '') + '<div style="font-size:12px;margin-top:4px">' + g.GorusIcerik + '</div>' + yns + '<div style="display:flex;gap:5px;margin-top:7px"><input type="text" id="yr-' + g.GorusID + '" placeholder="Yanıt..." style="flex:1;font-size:11px;padding:4px 7px"><button class="bm" onclick="yanitKaydet(' + g.GorusID + ',' + nid + ')">Yanıtla</button></div></div>'; }).join(''); el.innerHTML = html; }); }
-  function gorusModal(nid) { document.getElementById('mg-nid').value = nid; document.getElementById('mg-firma').value = ''; document.getElementById('mg-icerik').value = ''; document.getElementById('mg-ozet').value = ''; document.getElementById('m-gorus').classList.add('on'); }
-  function gorusKaydet() { var nid = parseInt(document.getElementById('mg-nid').value); var f = document.getElementById('mg-firma').value.trim(); if (!f) { alert('Firma adı zorunludur.'); return; } fetch('/api/firma_gorusu', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ NodeID: nid, PlatformID: seciliPID, FirmaAdi: f, GorusIcerik: document.getElementById('mg-icerik').value, GorusOzet: document.getElementById('mg-ozet').value, GorusKategori: document.getElementById('mg-ozet').value }) }).then(function () { mc('m-gorus'); yukle(); }); }
-  function yanitKaydet(gid, nid) { var inp = document.getElementById('yr-' + gid); var v = inp.value.trim(); if (!v) return; fetch('/api/firma_gorusu/' + gid + '/yanit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ YanitIcerik: v }) }).then(function () { var el = document.getElementById('ig-' + nid); if (el) el.dataset.y = '0'; inp.value = ''; gorusleriToggle(nid); }); }
+function gorusleriToggle(nid) {
+  var el = document.getElementById('ig-' + nid);
+  if (!el) return;
+  if (el.dataset.y === '1') {
+    el.innerHTML = '';
+    el.dataset.y = '0';
+    return;
+  }
+  fetch('/api/firma_gorusu/' + nid + '?platform_id=' + (seciliPID || ''))
+    .then(function (r) { return r.json(); })
+    .then(function (list) {
+      el.dataset.y = '1';
 
-  // ── TOPLU UPLOAD ──────────────────────────────────────────────────────────
+      if (!list.length) {
+        el.innerHTML = '<div style="font-size:11px;color:var(--text3);padding:6px">Henüz görüş yok.</div>';
+        return;
+      }
+
+      var html = list.map(function (g, i) {
+        var renk = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'][i % 5];
+
+        var yns = g.yanitlar.map(function (y) {
+        return '<div id="yanit-konteyner-' + y.YanitID + '" style="margin-top:5px;padding:5px 7px;background:var(--bg2);border-radius:4px;border-left:3px solid var(--accent)">' +
+          '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
+            '<div style="font-size:9px;color:var(--text3)">' + (y.YazanAdi || '—') + '</div>' +
+            '<div style="display:flex;gap:4px">' +
+              // Düzenleme Butonu
+              '<button class="bm" style="font-size:8px;padding:0 2px" onclick="yanitDuzenle(' + y.YanitID + ',' + g.GorusID + ',' + nid + ')">✏️</button>' +
+              // Silme Butonu
+              '<button class="bm" style="font-size:8px;padding:0 2px" onclick="yanitSil(' + y.YanitID + ',' + nid + ')">🗑</button>' +
+            '</div>' +
+          '</div>' +
+          '<div id="yt-text-' + y.YanitID + '" style="font-size:11px">' + y.YanitIcerik + '</div>' +
+          '</div>';
+      }).join('');
+        
+        return '<div style="margin-top:7px;padding:9px;background:var(--bg3);border-radius:5px;border-left:3px solid ' + renk + '">' +
+
+          '<div style="display:flex;justify-content:space-between;align-items:center">' +
+            '<span style="font-size:11px;font-weight:600;color:' + renk + '">' + g.FirmaAdi + '</span>' +
+            '<div style="display:flex;gap:6px">' +
+              '<button class="bm" onclick="gorusDuzenle(' + g.GorusID + ',\'' + g.FirmaAdi.replace(/'/g,"&#39;") + '\',\'' + (g.GorusIcerik || '').replace(/'/g,"&#39;") + '\',\'' + (g.GorusOzet || '').replace(/'/g,"&#39;") + '\')">✏️</button>' +
+              '<button class="bm" onclick="gorusSil(' + g.GorusID + ',' + nid + ')">🗑</button>' +
+            '</div>' +
+          '</div>' +
+
+          '<div style="font-size:9px;color:var(--text3)">' + g.OlusturmaTarihi + '</div>' +
+
+          (g.GorusOzet
+            ? '<div style="font-size:11px;color:var(--text2);font-style:italic;margin-top:3px">"' + g.GorusOzet + '"</div>'
+            : '') +
+
+          '<div style="font-size:12px;margin-top:4px">' + g.GorusIcerik + '</div>' +
+
+          yns +
+
+          '<div style="display:flex;gap:5px;margin-top:7px">' +
+            '<input type="text" id="yr-' + g.GorusID + '" placeholder="Yanıt..." style="flex:1;font-size:11px;padding:4px 7px">' +
+            '<button class="bm" onclick="yanitKaydet(' + g.GorusID + ',' + nid + ')">Yanıtla</button>' +
+          '</div>' +
+
+        '</div>';
+      }).join('');
+
+      el.innerHTML = html;
+    });
+}
+
+function gorusModal(nid) {
+  document.getElementById('mg-nid').value = nid;
+  document.getElementById('mg-firma').value = '';
+  document.getElementById('mg-icerik').value = '';
+  document.getElementById('mg-ozet').value = '';
+
+  document.getElementById('m-gorus').dataset.mode = 'create';
+
+  document.getElementById('m-gorus').classList.add('on');
+}
+function gorusDuzenle(gid, firma, icerik, ozet) {
+  document.getElementById('mg-nid').value = gid;
+  document.getElementById('mg-firma').value = firma;
+  document.getElementById('mg-icerik').value = icerik;
+  document.getElementById('mg-ozet').value = ozet;
+
+  document.getElementById('m-gorus').dataset.mode = 'edit';
+  document.getElementById('m-gorus').classList.add('on');
+}
+function gorusKaydet() {
+  var id = parseInt(document.getElementById('mg-nid').value);
+  var f = document.getElementById('mg-firma').value.trim();
+
+  if (!f) {
+    alert('Firma adı zorunludur.');
+    return;
+  }
+
+  var data = {
+    FirmaAdi: f,
+    GorusIcerik: document.getElementById('mg-icerik').value,
+    GorusOzet: document.getElementById('mg-ozet').value,
+    GorusKategori: document.getElementById('mg-ozet').value
+  };
+
+  var mode = document.getElementById('m-gorus').dataset.mode;
+
+  if (mode === 'edit') {
+    fetch('/api/firma_gorusu/' + id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    }).then(function () {
+      mc('m-gorus');
+      yukle();
+    });
+
+  } else {
+    data.NodeID = id;
+    data.PlatformID = seciliPID;
+
+    fetch('/api/firma_gorusu', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    }).then(function () {
+      mc('m-gorus');
+      yukle();
+    });
+  }
+}
+function gorusSil(gid, nid) {
+  if (!confirm('Bu görüş silinsin mi?')) return;
+
+  fetch('/api/firma_gorusu/' + gid, {
+    method: 'DELETE'
+  }).then(function () {
+    var el = document.getElementById('ig-' + nid);
+    if (el) el.dataset.y = '0';
+    gorusleriToggle(nid);
+    yukle();
+  });
+}
+  function yanitKaydet(gid, nid) {
+  var inp = document.getElementById('yr-' + gid);
+  var v = inp.value.trim();
+  if (!v) return;
+
+  fetch('/api/firma_gorusu/' + gid + '/yanit', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ YanitIcerik: v })
+  }).then(function () {
+    var el = document.getElementById('ig-' + nid);
+    if (el) el.dataset.y = '0';
+    inp.value = '';
+    gorusleriToggle(nid);
+  });
+}
+ // Yanıt Silme
+function yanitSil(yid, nid) {
+  if (!confirm('Bu yanıt silinsin mi?')) return;
+
+  fetch('/api/firma_gorusu_yanit/' + yid, {
+    method: 'DELETE'
+  }).then(function (r) {
+    if (r.ok) {
+      // Listeyi yenilemek için toggle'ı tetikle
+      var el = document.getElementById('ig-' + nid);
+      if (el) el.dataset.y = '0';
+      gorusleriToggle(nid);
+    } else {
+      alert('Bu yanıtı silme yetkiniz yok veya bir hata oluştu.');
+    }
+  });
+}
+
+// Yanıt Düzenleme (Inline Edit - Basit Yöntem)
+function yanitDuzenle(yid, gid, nid) {
+  var textEl = document.getElementById('yt-text-' + yid);
+  var eskiIcerik = textEl.innerText;
+  
+  // Text alanını bir inputa çeviriyoruz
+  textEl.innerHTML = '<div style="display:flex;gap:5px;margin-top:4px">' +
+    '<input type="text" id="edit-y-' + yid + '" value="' + eskiIcerik.replace(/"/g, '&quot;') + '" style="flex:1;font-size:11px;padding:2px">' +
+    '<button class="bm" onclick="yanitGuncelleKaydet(' + yid + ',' + nid + ')">💾</button>' +
+    '<button class="bm" onclick="gorusleriToggle(' + nid + ')">✕</button>' +
+    '</div>';
+}
+
+// Yanıt Güncelleme (API Kayıt)
+function yanitGuncelleKaydet(yid, nid) {
+  var yeniIcerik = document.getElementById('edit-y-' + yid).value.trim();
+  if (!yeniIcerik) return;
+
+  fetch('/api/firma_gorusu_yanit/' + yid, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ YanitIcerik: yeniIcerik })
+  }).then(function (r) {
+    if (r.ok) {
+      var el = document.getElementById('ig-' + nid);
+      if (el) el.dataset.y = '0';
+      gorusleriToggle(nid);
+    } else {
+      alert('Güncelleme yapılamadı.');
+    }
+  });
+}
+// ── TOPLU UPLOAD ──────────────────────────────────────────────────────────
   function uploadModal() { if (!seciliPID) { alert('Lütfen önce platform seçin.'); return; } document.getElementById('ut-liste').value = ''; document.getElementById('ut-onizleme').style.display = 'none'; document.getElementById('m-upload').classList.add('on'); }
   function utDosyaOku(inp) { var f = inp.files[0]; if (!f) return; var r = new FileReader(); r.onload = function (e) { document.getElementById('ut-liste').value = e.target.result.trim(); utOnizle(); }; r.readAsText(f, 'UTF-8'); inp.value = ''; }
   function utOnizle() { var s = document.getElementById('ut-liste').value.trim().split('\n').filter(function (x) { return x.trim(); }); var el = document.getElementById('ut-onizleme'); if (!s.length) { el.style.display = 'none'; return; } el.style.display = 'block'; el.innerHTML = '<b>' + s.length + ' ister:</b><br>' + s.map(function (x, i) { return (i + 1) + '. ' + x; }).join('<br>'); }

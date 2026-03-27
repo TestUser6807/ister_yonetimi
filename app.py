@@ -1140,13 +1140,15 @@ def firma_gorusu_guncelle(gid):
 @app.route('/api/firma_gorusu/<int:gid>', methods=['DELETE'])
 @login_gerekli
 def firma_gorusu_sil(gid):
-    cur = mysql.connection.cursor()
+    cur = cur_dict()
     cur.execute("SELECT FirmaAdi FROM firma_gorusu WHERE GorusID=%s", (gid,))
     fa = cur.fetchone()
     if fa:
         log_kaydet('firma_gorusu', gid, 'Firma Görüşleri', fa['FirmaAdi'], '-', LogTur.DELETE.value)
     cur.execute("DELETE FROM firma_gorusu WHERE GorusID=%s", (gid,))
-    mysql.connection.commit(); cur.close(); return jsonify({'ok': True})
+    mysql.connection.commit()
+    cur.close()
+    return jsonify({'ok': True})
 
 @app.route('/api/firma_gorusu/<int:gid>/yanit', methods=['POST'])
 @login_gerekli
@@ -1157,6 +1159,51 @@ def firma_gorusu_yanit_ekle(gid):
     mysql.connection.commit(); nid = cur.lastrowid; cur.close()
     return jsonify({'YanitID': nid})
 
+@app.route('/api/firma_gorusu_yanit/<int:yid>', methods=['DELETE'])
+@login_gerekli
+def firma_gorusu_yanit_sil(yid):
+    cur = mysql.connection.cursor()
+    
+    # Sadece yanıtın sahibi (YazanID) bu yanıtı silebilir
+    cur.execute("DELETE FROM firma_gorusu_yanit WHERE YanitID = %s AND YazanID = %s",
+                (yid, session['kullanici_id']))
+    
+    silinen_satir = cur.rowcount # İşlemden etkilenen satır sayısını alır
+    mysql.connection.commit()
+    cur.close()
+    
+    if silinen_satir > 0:
+        return jsonify({'mesaj': 'Yanıt başarıyla silindi.', 'durum': True}), 200
+    else:
+        return jsonify({'mesaj': 'Yanıt bulunamadı veya silme yetkiniz yok.', 'durum': False}), 403
+@app.route('/api/firma_gorusu_yanit/<int:yid>', methods=['PUT'])
+@login_gerekli
+def firma_gorusu_yanit_guncelle(yid):
+    d = request.json
+    yeni_icerik = d.get('YanitIcerik')
+
+    # Boş içerik gönderilmesini engelliyoruz
+    if not yeni_icerik or not yeni_icerik.strip():
+        return jsonify({'mesaj': 'Güncellenecek içerik boş olamaz.', 'durum': False}), 400
+
+    cur = mysql.connection.cursor()
+    
+    # Sadece yanıtın sahibi (YazanID) içeriği değiştirebilir
+    cur.execute("""
+        UPDATE firma_gorusu_yanit 
+        SET YanitIcerik = %s 
+        WHERE YanitID = %s AND YazanID = %s
+    """, (yeni_icerik, yid, session['kullanici_id']))
+    
+    guncellenen_satir = cur.rowcount
+    mysql.connection.commit()
+    cur.close()
+    
+    if guncellenen_satir > 0:
+        return jsonify({'mesaj': 'Yanıt başarıyla güncellendi.', 'durum': True}), 200
+    else:
+        # MySQL'de gönderilen veri mevcut veriyle birebir aynıysa da rowcount 0 dönebilir.
+        return jsonify({'mesaj': 'Yanıt bulunamadı, değiştirme yetkiniz yok veya içerik zaten aynı.', 'durum': False}), 403      
 # ── İSTER ONAY ────────────────────────────────────────────────────────────────
 @app.route('/api/ister_onay/<int:node_id>', methods=['GET'])
 @login_gerekli

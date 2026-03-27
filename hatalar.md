@@ -7,11 +7,12 @@
 + Platform (platformlar sayfası) name unique değil (olmalı mı?)
 + Admin kulanıcıları havuzun altındaki isterleri silebiliyor olmalı mı?
 + Excel import hatalı
-
++ Havuzda Platform isterdeki gibi firma görüşleri gözükmeli mi?
 ## Askıdakiler
 + Log basılmayan yerler var! (kulanıcı güncelleme örn) todo eklendi ordan bak
 + Firma görüşü silinebilir ve güncellenebilir olmalı akabinde log da basmalı.
-+ Havuzda Platform isterdeki gibi firma görüşleri gözükmeli mi?
++ Time error var zaman -3 saat olarak gözüküyor!
++ Havuzda Görüş tuşu gözükmesin.
 ## Yapılanlar
 + Toplu upload route eklendi.
 + TA SGÖ ilişki kuralı eklendi.
@@ -21,6 +22,7 @@
 + tablo güncelede modal adı tablo ekle
 + Havuz isterlerde Tablolar güncellenemiyor silinemiyor.
 + Yeni column eklendi. 
+
 ```` 
 ALTER TABLE degisiklik_log
 ADD Tur VARCHAR(10); 
