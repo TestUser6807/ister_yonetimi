@@ -7,7 +7,7 @@
 + Platform (platformlar sayfası) name unique değil (olmalı mı?)
 + Admin kulanıcıları havuzun altındaki isterleri silebiliyor olmalı mı?
 + Excel import hatalı
-
++ Havuzda Platform isterdeki gibi firma görüşleri gözükmeli mi?
 ## Askıdakiler
 + Firma görüşü silinebilir ve güncellenebilir olmalı akabinde log da basmalı.
 + Havuzda Platform isterdeki gibi firma görüşleri gözükmeli mi? 
