@@ -23,6 +23,7 @@
 + Yeni column eklendi. 
 + Havuz isterlerdeki "Görüş" kısmı kaldırıldı.
 + Log basımı eksik olan kısımlar tamamlandı.
++ Havuz ister onaylıların gelmeme sorunu çözüldü.
 ```` 
 ALTER TABLE degisiklik_log
 ADD Tur VARCHAR(10); 
