@@ -9,9 +9,8 @@
 + Excel import hatalı
 
 ## Askıdakiler
-+ Log basılmayan yerler var! (kulanıcı güncelleme örn) todo eklendi ordan bak
 + Firma görüşü silinebilir ve güncellenebilir olmalı akabinde log da basmalı.
-+ Havuzda Platform isterdeki gibi firma görüşleri gözükmeli mi?
++ Havuzda Platform isterdeki gibi firma görüşleri gözükmeli mi? 
 ## Yapılanlar
 + Toplu upload route eklendi.
 + TA SGÖ ilişki kuralı eklendi.
@@ -21,6 +20,8 @@
 + tablo güncelede modal adı tablo ekle
 + Havuz isterlerde Tablolar güncellenemiyor silinemiyor.
 + Yeni column eklendi. 
++ Havuz isterlerdeki "Görüş" kısmı kaldırıldı.
++ Log basımı eksik olan kısımlar tamamlandı.
 ```` 
 ALTER TABLE degisiklik_log
 ADD Tur VARCHAR(10); 
