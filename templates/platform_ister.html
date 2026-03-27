@@ -1018,14 +1018,15 @@ function gorusleriToggle(nid) {
         var renk = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'][i % 5];
 
         var yns = g.yanitlar.map(function (y) {
+        
         return '<div id="yanit-konteyner-' + y.YanitID + '" style="margin-top:5px;padding:5px 7px;background:var(--bg2);border-radius:4px;border-left:3px solid var(--accent)">' +
           '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
-            '<div style="font-size:9px;color:var(--text3)">' + (y.YazanAdi || '—') + '</div>' +
+            '<div style="font-size:9px;color:var(--text3)">' + (y.YazanAdi || '—') + y.OlusturmaTarihi  + '</div>' +
             '<div style="display:flex;gap:4px">' +
               // Düzenleme Butonu
-              '<button class="bm" style="font-size:8px;padding:0 2px" onclick="yanitDuzenle(' + y.YanitID + ',' + g.GorusID + ',' + nid + ')">✏️</button>' +
+              '<button class="bm" style="font-size:8px;padding:0 2px" onclick="yanitDuzenle(' + y.YanitID + ',' + g.GorusID + ',' + nid + ')">✎</button>' +
               // Silme Butonu
-              '<button class="bm" style="font-size:8px;padding:0 2px" onclick="yanitSil(' + y.YanitID + ',' + nid + ')">🗑</button>' +
+              '<button class="bm d" style="font-size:8px;padding:0 2px" onclick="yanitSil(' + y.YanitID + ',' + nid + ')">X</button>' +
             '</div>' +
           '</div>' +
           '<div id="yt-text-' + y.YanitID + '" style="font-size:11px">' + y.YanitIcerik + '</div>' +
@@ -1037,8 +1038,8 @@ function gorusleriToggle(nid) {
           '<div style="display:flex;justify-content:space-between;align-items:center">' +
             '<span style="font-size:11px;font-weight:600;color:' + renk + '">' + g.FirmaAdi + '</span>' +
             '<div style="display:flex;gap:6px">' +
-              '<button class="bm" onclick="gorusDuzenle(' + g.GorusID + ',\'' + g.FirmaAdi.replace(/'/g,"&#39;") + '\',\'' + (g.GorusIcerik || '').replace(/'/g,"&#39;") + '\',\'' + (g.GorusOzet || '').replace(/'/g,"&#39;") + '\')">✏️</button>' +
-              '<button class="bm" onclick="gorusSil(' + g.GorusID + ',' + nid + ')">🗑</button>' +
+              '<button class="bm" onclick="gorusDuzenle(' + g.GorusID + ',\'' + g.FirmaAdi.replace(/'/g,"&#39;") + '\',\'' + (g.GorusIcerik || '').replace(/'/g,"&#39;") + '\',\'' + (g.GorusOzet || '').replace(/'/g,"&#39;") + '\')">✎</button>' +
+              '<button class="bm d" onclick="gorusSil(' + g.GorusID + ',' + nid + ')">X</button>' +
             '</div>' +
           '</div>' +
 
@@ -1179,8 +1180,8 @@ function yanitDuzenle(yid, gid, nid) {
   // Text alanını bir inputa çeviriyoruz
   textEl.innerHTML = '<div style="display:flex;gap:5px;margin-top:4px">' +
     '<input type="text" id="edit-y-' + yid + '" value="' + eskiIcerik.replace(/"/g, '&quot;') + '" style="flex:1;font-size:11px;padding:2px">' +
-    '<button class="bm" onclick="yanitGuncelleKaydet(' + yid + ',' + nid + ')">💾</button>' +
-    '<button class="bm" onclick="gorusleriToggle(' + nid + ')">✕</button>' +
+    '<button class="bm btn btn-success" onclick="yanitGuncelleKaydet(' + yid + ',' + nid + ')">Kaydet</button>' +
+    '<button class="bm d" onclick="gorusleriToggle(' + nid + ')">X</button>' +
     '</div>';
 }
 
@@ -1217,5 +1218,6 @@ function yanitGuncelleKaydet(yid, nid) {
   function mc(id) { document.getElementById(id).classList.remove('on'); }
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { document.getElementById('ctx').style.display = 'none'; document.querySelectorAll('.modal-overlay.on').forEach(function (m) { m.classList.remove('on'); }); } });
   var taEkleNodeId = null; function taEkleModal(nodeId) { if (!seciliPID) { alert('Platform seçin.'); return; } taEkleNodeId = nodeId; fetch('/api/platform/' + seciliPID + '/ta').then(function (r) { return r.json(); }).then(function (list) { var sel = document.getElementById('ta-sec'); if (!list.length) { alert('Bu platformda TA dokümanı yok. Önce TA Dokümanları sayfasından oluşturun.'); return; } sel.innerHTML = list.map(function (t) { return '<option value="' + t.TaID + '">' + t.Adi + '</option>'; }).join(''); document.getElementById('m-ta-bagla').classList.add('on'); }); } function taBaglaKaydet() { var taId = parseInt(document.getElementById('ta-sec').value); if (!taId) return; fetch('/api/ta/' + taId + '/sgo_bagla', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ NodeID: taEkleNodeId }) }).then(function (r) { return r.json(); }).then(function (d) { if (d.hata) { alert(d.hata); return; } mc('m-ta-bagla'); yukle(); }); }
+
 </script>
 {% endblock %}
