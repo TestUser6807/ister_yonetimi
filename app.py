@@ -338,14 +338,25 @@ def platform_guncelle(pid):
 @app.route('/api/platform/<int:pid>', methods=['DELETE'])
 @login_gerekli
 def platform_sil(pid):
-    cur = cur_dict()
-    cur.execute("SELECT HavuzMu, PlatformAdi FROM platform_list WHERE PlatformID=%s", (pid,))
-    p = cur.fetchone()
-    if p and p['HavuzMu']:
-        cur.close(); return jsonify({'hata': 'Havuz silinemez.'}), 400
-    log_kaydet('platform_list', pid, 'Platform', p['PlatformAdi'], '-', LogTur.DELETE.value)
-    cur.execute("DELETE FROM platform_list WHERE PlatformID=%s", (pid,))
-    mysql.connection.commit(); cur.close(); return jsonify({'ok': True})
+    cur=cur_dict()
+    cur.execute("SELECT HavuzMu,PlatformAdi FROM platform_list WHERE PlatformID=%s",(pid,))
+    p=cur.fetchone()
+    if not p:
+        cur.close()
+        return jsonify({'hata':'Platform bulunamadı.'}),404
+    if p['HavuzMu']:
+        cur.close()
+        return jsonify({'hata':'Havuz silinemez.'}),400
+    cur.execute("SELECT n.NodeID,n.Icerik FROM ister_node n WHERE n.PlatformID=%s",(pid,))
+    nodes=cur.fetchall()
+    for n in nodes:
+        log_kaydet('ister_node',n['NodeID'],'Node',n['Icerik'],'-',LogTur.DELETE.value)
+        cur.execute("DELETE FROM ister_node WHERE NodeID=%s",(n['NodeID'],))
+    log_kaydet('platform_list',pid,'Platform',p['PlatformAdi'],'-',LogTur.DELETE.value)
+    cur.execute("DELETE FROM platform_list WHERE PlatformID=%s",(pid,))
+    mysql.connection.commit()
+    cur.close()
+    return jsonify({'ok':True})
 
 # ── SEVİYE TANIM ──────────────────────────────────────────────────────────────
 @app.route('/api/platform/<int:pid>/seviye', methods=['GET'])
