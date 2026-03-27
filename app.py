@@ -341,22 +341,11 @@ def platform_sil(pid):
     cur = cur_dict()
     cur.execute("SELECT HavuzMu, PlatformAdi FROM platform_list WHERE PlatformID=%s", (pid,))
     p = cur.fetchone()
-    if not p:
-        cur.close()
-        return jsonify({'hata': 'Platform bulunamadı.'}), 404
-    if p['HavuzMu']:
-        cur.close()
-        return jsonify({'hata': 'Havuz silinemez.'}), 400
-    cur.execute("SELECT COUNT(*) AS cnt FROM ister_node WHERE PlatformID=%s", (pid,))
-    count = cur.fetchone()['cnt']
-    if count > 0:
-        cur.close()
-        return jsonify({'hata': f'Platforma bağlı {count} kayıt var, önce onları silin.'}), 400
+    if p and p['HavuzMu']:
+        cur.close(); return jsonify({'hata': 'Havuz silinemez.'}), 400
     log_kaydet('platform_list', pid, 'Platform', p['PlatformAdi'], '-', LogTur.DELETE.value)
     cur.execute("DELETE FROM platform_list WHERE PlatformID=%s", (pid,))
-    mysql.connection.commit()
-    cur.close()
-    return jsonify({'ok': True})
+    mysql.connection.commit(); cur.close(); return jsonify({'ok': True})
 
 # ── SEVİYE TANIM ──────────────────────────────────────────────────────────────
 @app.route('/api/platform/<int:pid>/seviye', methods=['GET'])
@@ -813,20 +802,22 @@ def ta_ekle(pid):
     cur.execute("INSERT INTO ta_dokuman (PlatformID,SiraNo,SolSistemAdi,SagSistemAdi) VALUES (%s,%s,%s,%s)",
                 (pid, sira, d.get('SolSistemAdi',''), d.get('SagSistemAdi','')))
     mysql.connection.commit(); nid = cur.lastrowid; cur.close()
-    log_kaydet('TA Dokümanları', pid, 'Platform', '-', d.get('SolSistemAdi',''),LogTur.CREATE.value)
+    log_kaydet('ta_dokuman', pid, 'Platform', '-', d.get('SolSistemAdi',''),LogTur.CREATE.value)
     return jsonify({'TaID': nid, 'SiraNo': sira})
 
 @app.route('/api/ta/<int:ta_id>', methods=['PUT'])
 @login_gerekli
 def ta_guncelle(ta_id):
     d = request.json; cur = mysql.connection.cursor()
+    cur.execute("SELECT SolSistemAdi FROM ta_dokuman WHERE TaID=%s", (ta_id,))
+    eski = cur.fetchone(); eski_sol = eski[0] if eski else ''
     cur.execute("UPDATE ta_dokuman SET SolSistemAdi=%s, SagSistemAdi=%s WHERE TaID=%s",
                 (d.get('SolSistemAdi'), d.get('SagSistemAdi'), ta_id))
     cur.execute("DELETE FROM ta_veri WHERE TaID=%s", (ta_id,))
     for v in d.get('veriler', []):
         cur.execute("INSERT INTO ta_veri (TaID,Sistem,Yon,Icerik,Sira) VALUES (%s,%s,%s,%s,%s)",
                     (ta_id, v['sistem'], v['yon'], v['icerik'], v.get('sira',0)))
-    mysql.connection.commit(); cur.close(); log_kaydet('TA Dokümanları', ta_id, 'Platform', 'Güncellendi!', d.get('SolSistemAdi',''),LogTur.UPDATE.value)
+    mysql.connection.commit(); cur.close(); log_kaydet('ta_dokuman', ta_id, 'Platform', eski_sol, d.get('SolSistemAdi',''), LogTur.UPDATE.value)
     return jsonify({'ok': True})
 
 @app.route('/api/ta/<int:ta_id>/sgo_bagla', methods=['POST'])
@@ -989,13 +980,15 @@ def kullanici_ekle():
 @login_gerekli
 def kullanici_guncelle(uid):
     d = request.json; cur = mysql.connection.cursor()
+    cur.execute("SELECT KullaniciAdi FROM kullanici WHERE KullaniciID=%s", (uid,))
+    eski = cur.fetchone(); eski_kadi = eski[0] if eski else ''
     if d.get('Sifre'):
         cur.execute("UPDATE kullanici SET KullaniciAdi=%s,AdSoyad=%s,AktifMi=%s,Sifre=%s WHERE KullaniciID=%s",
                     (d['KullaniciAdi'],d.get('AdSoyad',''),d.get('AktifMi',1),d['Sifre'],uid))
     else:
         cur.execute("UPDATE kullanici SET KullaniciAdi=%s,AdSoyad=%s,AktifMi=%s WHERE KullaniciID=%s",
                     (d['KullaniciAdi'],d.get('AdSoyad',''),d.get('AktifMi',1),uid))
-    mysql.connection.commit(); cur.close(); log_kaydet('kullanici', uid, 'Kullanıcılar', 'Güncellendi', d.get('KullaniciAdi',''),LogTur.UPDATE.value)
+    mysql.connection.commit(); cur.close(); log_kaydet('kullanici', uid, 'Kullanıcılar', eski_kadi, d.get('KullaniciAdi',''),LogTur.UPDATE.value)
     return jsonify({'ok': True})
 
 @app.route('/api/kullanici/<int:uid>', methods=['DELETE'])
@@ -1143,26 +1136,30 @@ def firma_gorusu_ekle():
 @login_gerekli
 def firma_gorusu_guncelle(gid):
     d = request.json; cur = mysql.connection.cursor()
-    cur.execute("SELECT FirmaAdi FROM firma_gorusu WHERE GorusID=%s", (gid,))
+    cur.execute("SELECT FirmaAdi,GorusIcerik FROM firma_gorusu WHERE GorusID=%s", (gid,))
     fa = cur.fetchone()
-    if fa:
-        log_kaydet('firma_gorusu', gid, 'Firma Görüşleri', 'Güncellendi', d.get('GorusIcerik',''), LogTur.UPDATE.value)
+    if not fa:
+        cur.close(); return jsonify({'ok': False, 'error': 'Kayıt bulunamadı'}), 404
+    eski_firma_adi, eski_gorus_icerik = fa[0], fa[1]
+    yeni_firma_adi = d.get('FirmaAdi', eski_firma_adi); gorus_icerik = d.get('GorusIcerik', eski_gorus_icerik)
+    gorus_ozet = d.get('GorusOzet', None); gorus_kategori = d.get('GorusKategori', None)
     cur.execute("UPDATE firma_gorusu SET FirmaAdi=%s,GorusIcerik=%s,GorusOzet=%s,GorusKategori=%s WHERE GorusID=%s",
-                (d['FirmaAdi'], d.get('GorusIcerik',''), d.get('GorusOzet',''), d.get('GorusKategori',''), gid))
-    mysql.connection.commit(); cur.close(); log_kaydet('firma_gorusu', gid, 'Firma Görüşleri', 'Güncellendi', d.get('FirmaAdi',''), LogTur.UPDATE.value)
+                (yeni_firma_adi, gorus_icerik, gorus_ozet, gorus_kategori, gid))
+    mysql.connection.commit(); cur.close()
+    log_kaydet('firma_gorusu', gid, 'Firma Görüşleri', eski_firma_adi, yeni_firma_adi, LogTur.UPDATE.value)
     return jsonify({'ok': True})
 # todo sil log bas
 @app.route('/api/firma_gorusu/<int:gid>', methods=['DELETE'])
 @login_gerekli
 def firma_gorusu_sil(gid):
-    cur = cur_dict()
+    cur = mysql.connection.cursor()
     cur.execute("SELECT FirmaAdi FROM firma_gorusu WHERE GorusID=%s", (gid,))
     fa = cur.fetchone()
     if fa:
         log_kaydet('firma_gorusu', gid, 'Firma Görüşleri', fa['FirmaAdi'], '-', LogTur.DELETE.value)
     cur.execute("DELETE FROM firma_gorusu WHERE GorusID=%s", (gid,))
-    mysql.connection.commit()
-    cur.close()
+    mysql.connection.commit(); cur.close(); log_kaydet('firma_gorusu', gid, 'Firma Görüşleri', 'Silindi', '-', LogTur.DELETE.value)
+        
     return jsonify({'ok': True})
 
 @app.route('/api/firma_gorusu/<int:gid>/yanit', methods=['POST'])
@@ -1172,53 +1169,54 @@ def firma_gorusu_yanit_ekle(gid):
     cur.execute("INSERT INTO firma_gorusu_yanit (GorusID,YanitIcerik,YazanID) VALUES (%s,%s,%s)",
                 (gid, d.get('YanitIcerik',''), session['kullanici_id']))
     mysql.connection.commit(); nid = cur.lastrowid; cur.close()
+    log_kaydet('firma_gorusu_yanit', nid, 'Firma Görüşü Yanıtları', '-', d.get('YanitIcerik',''), LogTur.CREATE.value)
     return jsonify({'YanitID': nid})
-
 @app.route('/api/firma_gorusu_yanit/<int:yid>', methods=['DELETE'])
 @login_gerekli
 def firma_gorusu_yanit_sil(yid):
-    cur = mysql.connection.cursor()
-    
-    # Sadece yanıtın sahibi (YazanID) bu yanıtı silebilir
-    cur.execute("DELETE FROM firma_gorusu_yanit WHERE YanitID = %s AND YazanID = %s",
-                (yid, session['kullanici_id']))
-    
-    silinen_satir = cur.rowcount # İşlemden etkilenen satır sayısını alır
+    cur=mysql.connection.cursor()
+    cur.execute("SELECT YanitIcerik FROM firma_gorusu_yanit WHERE YanitID=%s AND YazanID=%s",(yid,session['kullanici_id']))
+    eski=cur.fetchone()
+    if not eski:
+        cur.close()
+        return jsonify({'mesaj':'Yanıt bulunamadı veya silme yetkiniz yok.','durum':False}),403
+    eski_icerik=eski[0]
+    cur.execute("DELETE FROM firma_gorusu_yanit WHERE YanitID=%s AND YazanID=%s",(yid,session['kullanici_id']))
+    silinen_satir=cur.rowcount
     mysql.connection.commit()
     cur.close()
-    
-    if silinen_satir > 0:
-        return jsonify({'mesaj': 'Yanıt başarıyla silindi.', 'durum': True}), 200
+    log_kaydet('firma_gorusu_yanit',yid,'Firma Görüşü Yanıtları',eski_icerik,'-',LogTur.DELETE.value)
+    if silinen_satir>0:
+        return jsonify({'mesaj':'Yanıt başarıyla silindi.','durum':True}),200
     else:
-        return jsonify({'mesaj': 'Yanıt bulunamadı veya silme yetkiniz yok.', 'durum': False}), 403
+        return jsonify({'mesaj':'Yanıt bulunamadı veya silme yetkiniz yok.','durum':False}),403
 @app.route('/api/firma_gorusu_yanit/<int:yid>', methods=['PUT'])
 @login_gerekli
 def firma_gorusu_yanit_guncelle(yid):
     d = request.json
     yeni_icerik = d.get('YanitIcerik')
-
-    # Boş içerik gönderilmesini engelliyoruz
     if not yeni_icerik or not yeni_icerik.strip():
         return jsonify({'mesaj': 'Güncellenecek içerik boş olamaz.', 'durum': False}), 400
-
     cur = mysql.connection.cursor()
-    
-    # Sadece yanıtın sahibi (YazanID) içeriği değiştirebilir
-    cur.execute("""
-        UPDATE firma_gorusu_yanit 
-        SET YanitIcerik = %s 
-        WHERE YanitID = %s AND YazanID = %s
-    """, (yeni_icerik, yid, session['kullanici_id']))
-    
+    cur.execute("SELECT YanitIcerik FROM firma_gorusu_yanit WHERE YanitID=%s AND YazanID=%s",
+                (yid, session['kullanici_id']))
+    eski = cur.fetchone()
+    if not eski:
+        cur.close()
+        return jsonify({'mesaj': 'Yanıt bulunamadı veya yetkiniz yok.', 'durum': False}), 403
+    eski_icerik = eski[0]
+    cur.execute("UPDATE firma_gorusu_yanit SET YanitIcerik=%s WHERE YanitID=%s AND YazanID=%s",
+                (yeni_icerik, yid, session['kullanici_id']))
     guncellenen_satir = cur.rowcount
     mysql.connection.commit()
     cur.close()
-    
+    log_kaydet('firma_gorusu_yanit', yid, 'Firma Görüşü Yanıtları',
+               eski_icerik, yeni_icerik, LogTur.UPDATE.value)
     if guncellenen_satir > 0:
         return jsonify({'mesaj': 'Yanıt başarıyla güncellendi.', 'durum': True}), 200
     else:
-        # MySQL'de gönderilen veri mevcut veriyle birebir aynıysa da rowcount 0 dönebilir.
-        return jsonify({'mesaj': 'Yanıt bulunamadı, değiştirme yetkiniz yok veya içerik zaten aynı.', 'durum': False}), 403      
+        return jsonify({'mesaj': 'İçerik zaten aynı.', 'durum': False}), 200
+
 # ── İSTER ONAY ────────────────────────────────────────────────────────────────
 @app.route('/api/ister_onay/<int:node_id>', methods=['GET'])
 @login_gerekli
@@ -1243,7 +1241,7 @@ def ister_onay_kaydet():
         cur.execute("""INSERT INTO ister_onay (NodeID,PlatformID,OnayDurumu)
                        VALUES (%s,%s,0) ON DUPLICATE KEY UPDATE OnayDurumu=0""",
                     (d['NodeID'], d['PlatformID']))
-    mysql.connection.commit(); cur.close(); log_kaydet('ister_onay', d['NodeID'], 'İster Onayları', 'Güncellendi', '-', LogTur.UPDATE.value)
+    mysql.connection.commit(); cur.close(); log_kaydet('ister_onay', d['NodeID'], 'İster Onayları', '-', '-', LogTur.UPDATE.value)
     return jsonify({'ok': True})
 
 # ── RAPOR API'LERİ ────────────────────────────────────────────────────────────
